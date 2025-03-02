@@ -1,0 +1,74 @@
+// // This is your Prisma schema file,
+// // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// generator client {
+//   provider        = "prisma-client-js"
+//   previewFeatures = ["mongoDb"]
+// }
+
+// datasource db {
+//   provider = "mongodb"
+//   url      = env("DATABASE_URL")
+// }
+
+// model User {
+//   id           String        @id @default(auto()) @map("_id") @db.ObjectId
+//   email        String        @unique
+//   password     String?
+//   chats        Chat[]
+//   reservations Reservation[]
+// }
+
+// model Chat {
+//   id        String   @id @map("_id")
+//   createdAt DateTime @default(now())
+//   messages  Json
+//   userId    String   @db.ObjectId
+//   user      User     @relation(fields: [userId], references: [id])
+// }
+
+// model Reservation {
+//   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+//   createdAt          DateTime @default(now())
+//   details            Json
+//   hasCompletedPayment Boolean  @default(false)
+//   userId             String   @db.ObjectId
+//   user               User     @relation(fields: [userId], references: [id])
+// } 
+
+
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["mongoDb"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid()) @map("_id")
+  email        String        @unique
+  password     String?
+  chats        Chat[]
+  reservations Reservation[]
+}
+
+model Chat {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  messages  Json
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Reservation {
+  id                 String   @id @default(uuid()) @map("_id")
+  createdAt          DateTime @default(now())
+  details            Json
+  hasCompletedPayment Boolean  @default(false)
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+}

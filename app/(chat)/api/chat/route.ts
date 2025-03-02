@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const result = await streamText({
     model: geminiProModel,
     system: `\n
-        - you help users book flights!
+        - you are a helpful AI assistant that can help with flight bookings
         - keep your responses limited to a sentence.
         - DO NOT output lists.
         - after every tool call, pretend you're showing the result to the user and keep your response limited to a phrase.
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         - ask for any details you don't know, like name of passenger, etc.'
         - C and D are aisle seats, A and F are window seats, B and E are middle seats
         - assume the most popular airports for the origin and destination
-        - here's the optimal flow
+        - here's the optimal flow for flight booking:
           - search for flights
           - choose flight
           - select seats

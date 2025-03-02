@@ -1,43 +1,36 @@
 import { Message } from "ai";
-import { InferSelectModel } from "drizzle-orm";
-import {
-  pgTable,
-  varchar,
-  timestamp,
-  json,
-  uuid,
-  boolean,
-} from "drizzle-orm/pg-core";
 
-export const user = pgTable("User", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  email: varchar("email", { length: 64 }).notNull(),
-  password: varchar("password", { length: 64 }),
-});
+// Define the types manually to avoid issues with Prisma client generation
+export interface User {
+  id: string; // MongoDB ObjectId as string
+  email: string;
+  password: string | null;
+}
 
-export type User = InferSelectModel<typeof user>;
+export interface PrismaChat {
+  id: string; // MongoDB ObjectId as string
+  createdAt: Date;
+  messages: any;
+  userId: string; // MongoDB ObjectId as string
+}
 
-export const chat = pgTable("Chat", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  messages: json("messages").notNull(),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id),
-});
-
-export type Chat = Omit<InferSelectModel<typeof chat>, "messages"> & {
+export type Chat = Omit<PrismaChat, "messages"> & {
   messages: Array<Message>;
 };
 
-export const reservation = pgTable("Reservation", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  details: json("details").notNull(),
-  hasCompletedPayment: boolean("hasCompletedPayment").notNull().default(false),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id),
-});
+export interface Reservation {
+  id: string; // MongoDB ObjectId as string
+  createdAt: Date;
+  details: any;
+  hasCompletedPayment: boolean;
+  userId: string; // MongoDB ObjectId as string
+}
 
-export type Reservation = InferSelectModel<typeof reservation>;
+// Once Prisma client is properly generated, you can switch back to:
+// import { User as PrismaUser, Chat as PrismaChat, Reservation as PrismaReservation } from "@prisma/client";
+// export type User = PrismaUser;
+// export type Chat = Omit<PrismaChat, "messages"> & { messages: Array<Message> };
+// export type Reservation = PrismaReservation;
+
+// This file now serves as a type definition file for Prisma models
+// The actual schema is defined in prisma/schema.prisma

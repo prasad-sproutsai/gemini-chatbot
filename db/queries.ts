@@ -1,21 +1,20 @@
 import "server-only";
 
 import { genSaltSync, hashSync } from "bcrypt-ts";
-import { desc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-
-import { user, chat, User, reservation } from "./schema";
+import { Message } from "ai";
+import { prisma } from "../lib/prisma";
 
 // Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
-let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=require`);
-let db = drizzle(client);
+// use the Prisma adapter for Auth.js / NextAuth
+// https://authjs.dev/reference/adapter/prisma
 
-export async function getUser(email: string): Promise<Array<User>> {
+export async function getUser(email: string) {
   try {
-    return await db.select().from(user).where(eq(user.email, email));
+    return await prisma.User.findMany({
+      where: {
+        email,
+      },
+    });
   } catch (error) {
     console.error("Failed to get user from database");
     throw error;
@@ -27,7 +26,12 @@ export async function createUser(email: string, password: string) {
   let hash = hashSync(password, salt);
 
   try {
-    return await db.insert(user).values({ email, password: hash });
+    return await prisma.User.create({
+      data: {
+        email,
+        password: hash,
+      },
+    });
   } catch (error) {
     console.error("Failed to create user in database");
     throw error;
@@ -44,22 +48,30 @@ export async function saveChat({
   userId: string;
 }) {
   try {
-    const selectedChats = await db.select().from(chat).where(eq(chat.id, id));
+    const existingChat = await prisma.Chat.findUnique({
+      where: {
+        id,
+      },
+    });
 
-    if (selectedChats.length > 0) {
-      return await db
-        .update(chat)
-        .set({
-          messages: JSON.stringify(messages),
-        })
-        .where(eq(chat.id, id));
+    if (existingChat) {
+      return await prisma.Chat.update({
+        where: {
+          id,
+        },
+        data: {
+          messages: messages,
+        },
+      });
     }
 
-    return await db.insert(chat).values({
-      id,
-      createdAt: new Date(),
-      messages: JSON.stringify(messages),
-      userId,
+    return await prisma.Chat.create({
+      data: {
+        id,
+        createdAt: new Date(),
+        messages: messages,
+        userId,
+      },
     });
   } catch (error) {
     console.error("Failed to save chat in database");
@@ -69,7 +81,11 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
-    return await db.delete(chat).where(eq(chat.id, id));
+    return await prisma.Chat.delete({
+      where: {
+        id,
+      },
+    });
   } catch (error) {
     console.error("Failed to delete chat by id from database");
     throw error;
@@ -78,11 +94,14 @@ export async function deleteChatById({ id }: { id: string }) {
 
 export async function getChatsByUserId({ id }: { id: string }) {
   try {
-    return await db
-      .select()
-      .from(chat)
-      .where(eq(chat.userId, id))
-      .orderBy(desc(chat.createdAt));
+    return await prisma.Chat.findMany({
+      where: {
+        userId: id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   } catch (error) {
     console.error("Failed to get chats by user from database");
     throw error;
@@ -91,8 +110,11 @@ export async function getChatsByUserId({ id }: { id: string }) {
 
 export async function getChatById({ id }: { id: string }) {
   try {
-    const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
-    return selectedChat;
+    return await prisma.Chat.findUnique({
+      where: {
+        id,
+      },
+    });
   } catch (error) {
     console.error("Failed to get chat by id from database");
     throw error;
@@ -108,22 +130,23 @@ export async function createReservation({
   userId: string;
   details: any;
 }) {
-  return await db.insert(reservation).values({
-    id,
-    createdAt: new Date(),
-    userId,
-    hasCompletedPayment: false,
-    details: JSON.stringify(details),
+  return await prisma.Reservation.create({
+    data: {
+      id,
+      createdAt: new Date(),
+      userId,
+      hasCompletedPayment: false,
+      details: details,
+    },
   });
 }
 
 export async function getReservationById({ id }: { id: string }) {
-  const [selectedReservation] = await db
-    .select()
-    .from(reservation)
-    .where(eq(reservation.id, id));
-
-  return selectedReservation;
+  return await prisma.Reservation.findUnique({
+    where: {
+      id,
+    },
+  });
 }
 
 export async function updateReservation({
@@ -133,10 +156,12 @@ export async function updateReservation({
   id: string;
   hasCompletedPayment: boolean;
 }) {
-  return await db
-    .update(reservation)
-    .set({
+  return await prisma.Reservation.update({
+    where: {
+      id,
+    },
+    data: {
       hasCompletedPayment,
-    })
-    .where(eq(reservation.id, id));
+    },
+  });
 }
